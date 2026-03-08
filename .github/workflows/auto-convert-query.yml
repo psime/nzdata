@@ -2,37 +2,38 @@
         run: |
           echo "Found added files:"
           echo "${{ github.event.head_commit.added[*] }}"
-          
-          for file in ${{ github.event.head_commit.added[*] }}; do
-            echo "-----------------------------"
-            echo "Processing $file"
 
-            # Convert GitHub file URL to raw URL
-            RAW_URL=$(gh api "repos/${{ github.repository }}/contents/$file" --jq '.download_url')
-            echo "Raw URL: $RAW_URL"
-
-            # Run DuckDB query via Python
-            echo "Querying $file with DuckDB..."
-            python - <<PYTHON
+          # create python script
+          cat << 'PYTHON' > query_file.py
 import duckdb
 import sys
 
-raw_url = "$RAW_URL"
+raw_url = sys.argv[1]
 con = duckdb.connect()
 
 try:
-    if raw_url.endswith('.parquet'):
+    if raw_url.endswith(".parquet"):
         result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 10").fetchall()
-    elif raw_url.endswith('.csv'):
+    elif raw_url.endswith(".csv"):
         result = con.execute(f"SELECT * FROM read_csv_auto('{raw_url}') LIMIT 10").fetchall()
-    elif raw_url.endswith('.duckdb') or raw_url.endswith('.db'):
+    elif raw_url.endswith(".duckdb") or raw_url.endswith(".db"):
         con.execute(f"ATTACH DATABASE '{raw_url}' AS dbfile")
         result = con.execute("SELECT * FROM dbfile.sqlite_master LIMIT 10").fetchall()
     else:
         result = []
-    print(result)
-except Exception as e:
-    print("❌ Error querying file:", e, file=sys.stderr)
-            PYTHON
 
-        done
+    print(result)
+
+except Exception as e:
+    print("Error querying file:", e, file=sys.stderr)
+PYTHON
+
+          for file in ${{ github.event.head_commit.added[*] }}; do
+            echo "-----------------------------"
+            echo "Processing $file"
+
+            RAW_URL=$(gh api "repos/${{ github.repository }}/contents/$file" --jq '.download_url')
+            echo "Raw URL: $RAW_URL"
+
+            python query_file.py "$RAW_URL"
+          done
