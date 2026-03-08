@@ -49,7 +49,7 @@ jobs:
                 echo "----------------------"
                 echo "Processing $file"
 
-                RAW_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/$file"
+                RAW_URL="https://raw.githubusercontent.com/${{ github.repository }}/master/$file"
 
                 echo "Raw URL: $RAW_URL"
 
