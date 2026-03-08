@@ -48,8 +48,7 @@ jobs:
                 if [[ "$file" == *.csv || "$file" == *.parquet ]]; then
                 echo "----------------------"
                 echo "Processing $file"
-
-                RAW_URL="https://raw.githubusercontent.com/${{ github.repository }}/master/$file"
+                RAW_URL="https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/$file"
 
                 echo "Raw URL: $RAW_URL"
 
