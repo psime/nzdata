@@ -27,12 +27,17 @@ jobs:
 
             try:
                 if raw_url.endswith(".parquet"):
-                    result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 30").fetchall()
+                    count = con.execute(f"SELECT COUNT(*) FROM read_parquet('{raw_url}')").fetchone()[0]
+                    schema = con.execute(f"DESCRIBE SELECT * FROM read_parquet('{raw_url}')").fetchall()
+                    result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 50").fetchall()
                 elif raw_url.endswith(".csv"):
                     result = con.execute(f"SELECT * FROM read_csv_auto('{raw_url}') LIMIT 10").fetchall()
                 else:
                     result = []
 
+                print("Total rows:", count)    
+                print("Schema:", schema)
+                print("Sample rows:", result)
                 print(result)
 
             except Exception as e:
