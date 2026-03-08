@@ -1,39 +1,40 @@
-- name: Process new data files
-  run: |
-    echo "Found added files:"
-    echo "${{ github.event.head_commit.added[*] }}"
+name: Auto Convert Query
 
-    # create python script
-    cat << 'PYTHON' > query_file.py
-    import duckdb
-    import sys
+on:
+  push:
 
-    raw_url = sys.argv[1]
-    con = duckdb.connect()
+jobs:
+  process-files:
+    runs-on: ubuntu-latest
 
-    try:
-        if raw_url.endswith(".parquet"):
-            result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 10").fetchall()
-        elif raw_url.endswith(".csv"):
-            result = con.execute(f"SELECT * FROM read_csv_auto('{raw_url}') LIMIT 10").fetchall()
-        elif raw_url.endswith(".duckdb") or raw_url.endswith(".db"):
-            con.execute(f"ATTACH DATABASE '{raw_url}' AS dbfile")
-            result = con.execute("SELECT * FROM dbfile.sqlite_master LIMIT 10").fetchall()
-        else:
-            result = []
+    steps:
+      - uses: actions/checkout@v4
 
-        print(result)
+      - name: Install dependencies
+        run: pip install duckdb
 
-    except Exception as e:
-        print("Error querying file:", e, file=sys.stderr)
-    PYTHON
+      - name: Process new data files
+        run: |
+          echo "Found added files:"
+          echo "${{ github.event.head_commit.added[*] }}"
 
-    for file in ${{ github.event.head_commit.added[*] }}; do
-      echo "-----------------------------"
-      echo "Processing $file"
+          cat << 'PYTHON' > query_file.py
+          import duckdb
+          import sys
 
-      RAW_URL=$(gh api "repos/${{ github.repository }}/contents/$file" --jq '.download_url')
-      echo "Raw URL: $RAW_URL"
+          raw_url = sys.argv[1]
+          con = duckdb.connect()
 
-      python query_file.py "$RAW_URL"
-    done
+          try:
+              if raw_url.endswith(".parquet"):
+                  result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 10").fetchall()
+              elif raw_url.endswith(".csv"):
+                  result = con.execute(f"SELECT * FROM read_csv_auto('{raw_url}') LIMIT 10").fetchall()
+              else:
+                  result = []
+
+              print(result)
+
+          except Exception as e:
+              print("Error querying file:", e)
+          PYTHON
