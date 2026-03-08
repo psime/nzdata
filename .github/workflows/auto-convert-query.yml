@@ -15,8 +15,7 @@ jobs:
 
       - name: Process new data files
         run: |
-            echo "Found added files:"
-            echo '${{ toJson(github.event.head_commit.added) }}'
+            echo "Checking for new data files..."
 
             cat << 'PYTHON' > query_file.py
             import duckdb
@@ -39,7 +38,13 @@ jobs:
                 print("Error querying file:", e)
             PYTHON
 
-            for file in ${{ github.event.head_commit.added }}; do
+            FILES=$(git diff --name-only HEAD~1 HEAD)
+
+            echo "Files changed:"
+            echo "$FILES"
+
+            for file in $FILES; do
+                if [[ "$file" == *.csv || "$file" == *.parquet ]]; then
                 echo "----------------------"
                 echo "Processing $file"
 
@@ -48,4 +53,5 @@ jobs:
                 echo "Raw URL: $RAW_URL"
 
                 python query_file.py "$RAW_URL"
+                fi
             done
