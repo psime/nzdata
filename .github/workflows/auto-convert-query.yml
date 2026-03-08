@@ -27,7 +27,7 @@ jobs:
 
             try:
                 if raw_url.endswith(".parquet"):
-                    result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 10").fetchall()
+                    result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 30").fetchall()
                 elif raw_url.endswith(".csv"):
                     result = con.execute(f"SELECT * FROM read_csv_auto('{raw_url}') LIMIT 10").fetchall()
                 else:
