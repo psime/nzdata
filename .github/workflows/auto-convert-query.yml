@@ -15,26 +15,37 @@ jobs:
 
       - name: Process new data files
         run: |
-          echo "Found added files:"
-          echo "${{ github.event.head_commit.added[*] }}"
+            echo "Found added files:"
+            echo '${{ toJson(github.event.head_commit.added) }}'
 
-          cat << 'PYTHON' > query_file.py
-          import duckdb
-          import sys
+            cat << 'PYTHON' > query_file.py
+            import duckdb
+            import sys
 
-          raw_url = sys.argv[1]
-          con = duckdb.connect()
+            raw_url = sys.argv[1]
+            con = duckdb.connect()
 
-          try:
-              if raw_url.endswith(".parquet"):
-                  result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 10").fetchall()
-              elif raw_url.endswith(".csv"):
-                  result = con.execute(f"SELECT * FROM read_csv_auto('{raw_url}') LIMIT 10").fetchall()
-              else:
-                  result = []
+            try:
+                if raw_url.endswith(".parquet"):
+                    result = con.execute(f"SELECT * FROM read_parquet('{raw_url}') LIMIT 10").fetchall()
+                elif raw_url.endswith(".csv"):
+                    result = con.execute(f"SELECT * FROM read_csv_auto('{raw_url}') LIMIT 10").fetchall()
+                else:
+                    result = []
 
-              print(result)
+                print(result)
 
-          except Exception as e:
-              print("Error querying file:", e)
-          PYTHON
+            except Exception as e:
+                print("Error querying file:", e)
+            PYTHON
+
+            for file in ${{ github.event.head_commit.added }}; do
+                echo "----------------------"
+                echo "Processing $file"
+
+                RAW_URL="https://raw.githubusercontent.com/${{ github.repository }}/main/$file"
+
+                echo "Raw URL: $RAW_URL"
+
+                python query_file.py "$RAW_URL"
+            done
